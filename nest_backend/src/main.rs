@@ -1,35 +1,43 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpServer};
+use mongodb::{Client, options::ClientOptions};
 
-struct AppState{
-    version: String,
-}
+use std::env;
 
-#[get("/")]
-async fn index(data: web::Data<AppState>) -> impl Responder {
-    let version = &data.version;
-    HttpResponse::Ok().body(format!("Nest_Backend {version}"))
-}
+mod core;
+use core::appstate::AppState;
 
-async fn app() -> impl Responder {
-    HttpResponse::Ok().body("App main")
-}
+mod routes;
+use routes::index::index;
+use routes::signup::signup;
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv::dotenv().ok();
     println!("Server starting at 127.0.0.1:8000");
+    
+    // CONFIG STUFF
+    let client_uri = env::var("MONGODB_URI").expect("[ENV] Mongodb uri not set in env");
+    let ip = env::var("ADDRESS").expect("[ENV] Server address not set in env");
+    let port = env::var("PORT").expect("[ENV] Server port not set in env");
 
-    HttpServer::new(|| {
+    // Mongodb client creation
+    let options = ClientOptions::parse(&client_uri).await.expect("[MDB] Unable to parse client uri");
+    let client: Client = Client::with_options(options).expect("[MDB] Unable to create client");
+
+    HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new( AppState
-                    {version: String::from("v0.0")}
+                    {
+                        version: String::from("v0.0"),
+                        db: client.clone()
+                    }
                 ))
-            .service(index)
-            .service(
-                web::scope("/app")
-                .route("/index", web::get().to(app))
-            )
+            .route("/", web::get().to(index))
+            .route("/signup", web::post().to(signup))
+
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((ip, port.parse().expect("[ENV] Unable to parse port number")))?
     .run()
     .await
 }
