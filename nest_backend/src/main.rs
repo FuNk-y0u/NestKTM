@@ -20,6 +20,8 @@ async fn main() -> std::io::Result<()> {
     let client_uri = env::var("MONGODB_URI").expect("[ENV] Mongodb uri not set in env");
     let ip = env::var("ADDRESS").expect("[ENV] Server address not set in env");
     let port = env::var("PORT").expect("[ENV] Server port not set in env");
+    let twillo_ssid = env::var("TWILLO_SSID").expect("[ENV] twillo ssid not set in env");
+    let twillo_auth = env::var("TWILLO_AUTH").expect("[ENV] twillo auth not set in env");
 
     // Mongodb client creation
     let options = ClientOptions::parse(&client_uri).await.expect("[MDB] Unable to parse client uri");
@@ -30,7 +32,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new( AppState
                     {
                         version: String::from("v0.0"),
-                        db: client.clone()
+                        db: client.clone(),
+                        sms_ssid: twillo_ssid.clone(),
+                        sms_auth: twillo_auth.clone()
                     }
                 ))
             .route("/", web::get().to(index))
