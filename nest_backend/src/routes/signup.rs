@@ -15,7 +15,7 @@ pub async fn signup(body: web::Json<Signup>, data: web::Data<AppState>) -> impl 
         form.insert("To", format!("+977{0}", body.phone));
         form.insert("Channel", "sms".to_string());
 
-        let result = client.post("https://verify.twilio.com/v2/Services/VAd49684c4d0557955e6e46671fe589bc7/Verifications")
+        let result = client.post("https://verify.twilio.com/")
         .basic_auth(&data.sms_ssid,Some(&data.sms_auth))
         .form(&form)
         .send()
